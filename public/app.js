@@ -1,21 +1,22 @@
 const $ = (id) => document.getElementById(id);
 const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const titles = { bookshelf: 'Bookcase', cabinet: 'Cabinet', cube: 'Storage cube', desk: 'Desk' };
-const names = { bookshelf: 'Everyday bookcase', cabinet: 'Living room cabinet', cube: 'Little storage cube', desk: 'A desk of my own' };
+const titles = { bookshelf: 'Bookcase', cabinet: 'Cabinet', cube: 'Storage cube', desk: 'Desk', tideline: 'Tideline' };
+const names = { bookshelf: 'Everyday bookcase', cabinet: 'Living room cabinet', cube: 'Little storage cube', desk: 'A desk of my own', tideline: 'TIDELINE / 01 — Clay & Birch' };
 const icons = {
+  tideline: '<path d="M2 30V18h6v12m2 0V10h6v20m2 0V3h6v27m2 0V7h6v23m2 0V16h5v14M2 24h6m2-5h6m2-7h6m-6 10h6m2-5h6m2 8h5"/>',
   bookshelf: '<path d="M10 3h20v24H10zM10 10h20M10 18h20M13 27v3m14-3v3"/>',
   cabinet: '<path d="M3 10h34v16H3zM3 18h34M6 26v4m28-4v4"/>',
   cube: '<path d="m8 9 14-6 12 6v16l-14 6-12-6zM8 9l12 6 14-6M20 15v16M11 13v10l9 4"/>',
   desk: '<path d="m3 10 12-6 22 5-11 6zM5 12v16l4-2V14m25-4v16l-4 2V13M9 22l21 4"/>',
 };
 const labels = {
-  width: 'Width', height: 'Height', depth: 'Depth', material: 'Panel material', joinery: 'Joinery',
+  gap: 'Shadow gap (mm)', accent: 'Accent finish', width: 'Width', height: 'Height', depth: 'Depth', material: 'Panel material', joinery: 'Joinery',
   adjustableShelves: 'Adjustable shelves', fixedShelves: 'Fixed shelves', backMaterial: 'Back panel', load: 'Expected load',
   plinthHeight: 'Plinth height (mm)', fixedShelfHeights: 'Fixed shelf heights (mm, comma separated)',
   edgeBandFronts: 'Band the front edges', edgeBand: 'Band visible edges', topOverhang: 'Top overhang (mm)',
   modestyHeight: 'Rear panel height (mm)', modestyInset: 'Rear panel inset (mm)',
 };
-const choiceLabels = { cam_dowel: 'Cam locks + dowels', confirmat: 'Confirmat screws', light: 'Decor & light storage', books: 'Everyday books', heavy: 'Records & heavy books' };
+const choiceLabels = { clay: 'Clay red', ink: 'Deep ink', ochre: 'Ochre', cam_dowel: 'Cam locks + dowels', confirmat: 'Confirmat screws', light: 'Decor & light storage', books: 'Everyday books', heavy: 'Records & heavy books' };
 let options, template = 'bookshelf', params = {}, designId, baseRevision, result, view = 'assembled', step = 0, sheet = 0;
 let dirty = true, touched = false, pending = true, busy = false, valid = false, sequence = 0, timer, controller, toastTimer;
 const draftKey = 'aikea.workshop.draft.v1';
@@ -66,7 +67,7 @@ function renderForm() {
   $('templates').innerHTML = options.templates.map((t) => `<button type="button" class="template-button" data-template="${t.key}" aria-pressed="${t.key === template}"><svg viewBox="0 0 40 34" aria-hidden="true">${icons[t.key]}</svg>${titles[t.key]}</button>`).join('');
   $('dimensions').innerHTML = ['width', 'height', 'depth'].map((key) => inputFor(key, fields[key], params[key])).join('');
   $('material-field').innerHTML = inputFor('material', fields.material, params.material);
-  const primary = template === 'desk' ? ['joinery', 'topOverhang'] : ['adjustableShelves', 'joinery', 'backMaterial'];
+  const primary = template === 'tideline' ? ['accent', 'gap', 'joinery'] : template === 'desk' ? ['joinery', 'topOverhang'] : ['adjustableShelves', 'joinery', 'backMaterial'];
   $('primary-fields').innerHTML = primary.map((key) => inputFor(key, fields[key], params[key])).join('');
   const used = new Set(['width', 'height', 'depth', 'material', ...primary]);
   $('advanced-fields').innerHTML = Object.entries(fields).filter(([key]) => !used.has(key)).map(([key, schema]) => inputFor(key, schema, params[key])).join('');
@@ -127,7 +128,7 @@ function renderView() {
   $('drawing').setAttribute('aria-label', `${titles[template]}: ${view} view, ${result.design.overall.width} mm wide, ${result.design.overall.height} mm tall`);
   if (view === 'assembled' || view === 'exploded') {
     $('drawing').innerHTML = view === 'assembled' ? result.preview : result.exploded;
-    $('view-caption').textContent = view === 'assembled' ? 'ISOMETRIC VIEW / MILLIMETRES' : 'EXPLODED VIEW / PART LETTERS';
+    $('view-caption').textContent = view === 'assembled' ? (template === 'tideline' ? 'FRONT VIEW / MILLIMETRES' : 'ISOMETRIC VIEW / MILLIMETRES') : 'EXPLODED VIEW / PART LETTERS';
   } else if (view === 'assembly') {
     const s = result.steps[step];
     $('drawing').innerHTML = s.svg;
@@ -155,7 +156,7 @@ function renderChecks() {
   }).join('');
 }
 function renderParts() {
-  $('parts-content').innerHTML = `<p class="field-note">${result.metrics.parts} panels · ${result.metrics.uniqueParts} unique shapes. All dimensions in millimetres.</p><h3>Your panels</h3><div class="part-grid">${result.cutlist.map((p) => `<article class="part-card"><div class="part-picture">${p.svg}</div><strong><span class="part-badge">${escape(p.label)}</span>${escape(p.name)} × ${p.qty}</strong><p>${p.length} × ${p.width} × ${p.thickness} mm</p><p>${escape(p.material)}</p><p>${p.faceOps} face operations · ${p.edgeBores} edge bores</p></article>`).join('')}</div><h3>Hardware, including spares</h3>${result.hardware.map((h) => `<div class="hardware-row"><div><span>${escape(h.name)}</span><p>${escape(h.spec)}</p><p>${h.qty} for assembly + ${h.spares} spare</p></div><strong>× ${h.order}</strong></div>`).join('')}`;
+  $('parts-content').innerHTML = `<p class="field-note">${result.metrics.parts} panels · ${result.metrics.uniqueParts} unique shapes. All dimensions in millimetres.</p><h3>Your panels</h3><div class="part-grid">${result.cutlist.map((p) => `<article class="part-card"><div class="part-picture">${p.svg}</div><strong><span class="part-badge">${escape(p.label)}</span>${escape(p.name)} × ${p.qty}</strong><p>${p.length} × ${p.width} × ${p.thickness} mm</p><p>${escape(p.material)}</p><p>${escape(p.notes)}</p><p>${p.faceOps} face operations · ${p.edgeBores} edge bores</p></article>`).join('')}</div><h3>Hardware, including spares</h3>${result.hardware.map((h) => `<div class="hardware-row"><div><span>${escape(h.name)}</span><p>${escape(h.spec)}</p><p>${h.qty} for assembly + ${h.spares} spare</p></div><strong>× ${h.order}</strong></div>`).join('')}`;
 }
 async function persist() {
   const saved = await api('/api/designs', payload());

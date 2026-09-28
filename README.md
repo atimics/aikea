@@ -15,13 +15,19 @@ npm ci
 npm run studio
 ```
 
-Open **[localhost:3000](http://localhost:3000)**. Pick a bookcase, cabinet, storage cube or desk. Set the dimensions, material and joinery, then explore the assembled piece, exploded panels, assembly steps and sheet layouts.
+Open **[localhost:3000](http://localhost:3000)**. Pick a bookcase, cabinet, storage cube, desk or Tideline art piece. Set the dimensions, material and joinery, then explore the assembled piece, exploded panels, assembly steps and sheet layouts.
 
 Save a design to revisit it in **My designs**. **Build my kit** creates a ZIP with cut files, hardware, assembly instructions and shop notes. The parts inspector shows each panel and its machining, plus hardware quantities with spares. Draft edits recover when you refresh the browser.
 
 The browser, MCP server and CLI share the same designs in `$AIKEA_HOME` (default `~/.aikea`). A partial revision keeps your other settings. A saved revision clears the old kit so the next download follows the current design. The browser checks for revisions made by another client before saving or building.
 
 For live development, use `npm run dev:studio`. Refresh the browser after edits.
+
+## Furniture art: TIDELINE / 01
+
+Five birch towers, two clay-red backs and a rising shoreline silhouette. This editable design includes its own panel model, finish recipe and fabrication kit. [Explore the piece](docs/tideline/README.md).
+
+![Tideline — AI-generated room concept](docs/tideline/room-concept.png)
 
 ## Connect your assistant
 
@@ -45,7 +51,7 @@ idea ──► aikea_design ──► parts + joinery + checks ──► aikea_b
              └────┘ revise (design_id)                        aikea_request_quote ──► CNC shop (webhook or email)
 ```
 
-1. **Parametric templates** (`bookshelf`, `cabinet`, `cube`, `desk`) generate panels in 3D. Each panel has its own right-handed local frame, so every hole is in part coordinates, the same as on the CNC bed.
+1. **Parametric templates** (`bookshelf`, `cabinet`, `cube`, `desk`, `tideline`) generate panels in 3D. Each panel has its own right-handed local frame, so every hole is in part coordinates, the same as on the CNC bed.
 2. **Joinery is computed in world space and projected onto both parts.** A cam lock adds a 15mm housing and an 8mm edge bore to one panel, and a 5mm bolt hole to the mating face at the exact same world point. The tests check that every edge bore lines up with a hole in its mating part.
 3. **Validation** flags parts that won't fit a sheet (grain-aware), shelf sag (δ = 5wL⁴/384EI against L/600), tip-over risk, and machining that clashes or sits too close to an edge.
 4. **Nesting** uses MaxRects with several part orderings, and never rotates parts whose grain matters.

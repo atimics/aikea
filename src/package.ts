@@ -148,7 +148,7 @@ async function writePackage(d: Design, opts: Partial<NestOptions>, stage: string
   put("hardware.csv", toCsv(hardwareBom(d).map(({ key, ...r }) => r) as any));
   put("instructions.html", instructionsHtml(d));
   put("SHOP_NOTES.md", shopNotes(d, sheets, nest, metrics));
-  const preview = isoSvg(d, d.parts, { dims: true, width: 640, title: d.name });
+  const preview = isoSvg(d, d.parts, { dims: true, width: 640, title: d.name, materialColors: true, camera: d.template === "tideline" ? "front" : "isometric" });
   put("svg/preview.svg", preview);
   const png = await svgToPng(preview);
   if (png) put("preview.png", png);
