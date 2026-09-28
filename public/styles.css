@@ -112,12 +112,7 @@ legend {
   border-radius:5px;
   line-height:1
 }
-.brand-dot {
-  font-size:10px;
-  align-self:flex-start;
-  margin-top:6px;
-  margin-left:-6px
-}
+
 .brand-caption {
   font-size:9px;
   letter-spacing:1.1px;

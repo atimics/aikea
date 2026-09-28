@@ -1,0 +1,5 @@
+Baseline: commit 0ad3ab9
+GET /
+Content-Type: text/plain
+
+aikea mcp ok
