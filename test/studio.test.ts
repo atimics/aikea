@@ -65,6 +65,12 @@ describe("fabrication package integrity", () => {
     await expect(buildPackage(d)).rejects.toThrow("Fix design errors first");
     expect(existsSync(join(designDir(d.id), 'build'))).toBe(false);
   });
+  it("checks the geometry of models saved by older versions", async () => {
+    const d = createDesign("bookshelf", { fixedShelfHeights: [500, 505] });
+    d.issues = []; // Older files may predate the overlap check.
+    saveDesign(d);
+    await expect(buildPackage(d)).rejects.toThrow("overlap");
+  });
   it("writes a complete ZIP and clears old files when a design is revised", async () => {
     const d = createDesign("cube", {}); saveDesign(d);
     const first = await buildPackage(d);

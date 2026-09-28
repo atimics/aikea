@@ -8,7 +8,7 @@ import { z } from "zod";
 import { buildPackage } from "./package.js";
 import { createServer } from "./server.js";
 import { aikeaHome, listDesigns, loadDesign, saveDesign } from "./store.js";
-import { designFromInput, studioDesign, studioOptions } from "./studio.js";
+import { designFromInput, revisionOf, studioDesign, studioOptions } from "./studio.js";
 
 const MIME: Record<string, string> = {
   ".zip": "application/zip", ".dxf": "application/dxf", ".html": "text/html; charset=utf-8",
@@ -103,8 +103,12 @@ export function createApp() {
         }
         const build = /^\/api\/designs\/([a-z0-9-]+)\/build$/.exec(path);
         if (build) {
-          const options = z.object({ toolDia: z.number().min(1).max(20).optional(), spacing: z.number().min(0).max(30).optional(), trim: z.number().min(0).max(50).optional() }).strict().parse(await readJson(req));
+          const { expected_revision, ...options } = z.object({
+            toolDia: z.number().min(1).max(20).optional(), spacing: z.number().min(0).max(30).optional(),
+            trim: z.number().min(0).max(50).optional(), expected_revision: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+          }).strict().parse(await readJson(req));
           const d = loadDesign(build[1]);
+          if (expected_revision && expected_revision !== revisionOf(d)) throw new HttpError(409, "This design changed in another client. Open the latest saved design before building.");
           const b = await buildPackage(d, options);
           const prefix = `/files/${d.id}/`;
           json(res, 200, { sheets: b.sheets, metrics: b.metrics, download: `${prefix}${d.id}.zip`, instructions: `${prefix}build/instructions.html`, files: b.files.map((name) => ({ name, url: `${prefix}build/${name}` })) });

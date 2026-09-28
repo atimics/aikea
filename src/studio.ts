@@ -40,7 +40,7 @@ export function studioOptions() {
 
 /** Browser and MCP clients share the furniture engine and saved designs. */
 export function studioDesign(d: Design) {
-  const opts = { width: 760, maxHeight: 660, background: "transparent" };
+  const opts = { width: 760, maxHeight: 660, background: "transparent", materialColors: true };
   const byId = new Map(d.parts.map((p) => [p.id, p]));
   let sheets: { index: number; material: string; utilisation: number; svg: string }[] = [];
   let nestingError: string | undefined;

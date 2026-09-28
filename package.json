@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit -p .",
     "prepare": "npm run build",
     "studio": "node dist/index.js --http",
-    "dev:studio": "tsx watch src/index.ts --http"
+    "dev:studio": "tsx watch src/index.ts --http",
+    "test:browser": "npm run build && playwright test"
   },
   "keywords": [
     "mcp",
@@ -30,6 +31,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/node": "^26.6.3",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

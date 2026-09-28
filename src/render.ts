@@ -47,6 +47,7 @@ export interface IsoOptions {
   title?: string;
   explode?: number; // millimetres of space between panels, for inspection
   background?: string;
+  materialColors?: boolean;
 }
 
 export function isoSvg(design: Design, parts: Part[], opts: IsoOptions = {}): string {
@@ -88,7 +89,11 @@ export function isoSvg(design: Design, parts: Part[], opts: IsoOptions = {}): st
   const labelSpots: { x: number; y: number; label: string }[] = [];
   for (const b of drawOrder(boxes)) {
     const hl = !opts.highlight || opts.highlight.has(b.part.id);
-    const c = hl ? { t: PALETTE.newTop, f: PALETTE.newFront, s: PALETTE.newSide, k: PALETTE.newStroke } : { t: PALETTE.oldTop, f: PALETTE.oldFront, s: PALETTE.oldSide, k: PALETTE.oldStroke };
+    const materialColors = b.part.material.startsWith("melamine") ? { t: "#fafaf4", f: "#e7e7dc", s: "#cecec1", k: "#6c7266" }
+      : b.part.material.startsWith("mdf") ? { t: "#d6c6a7", f: "#c5b392", s: "#af9b78", k: "#6f5e40" }
+      : b.part.material.startsWith("baltic") ? { t: "#f2e5c9", f: "#e6d3ae", s: "#ccb78c", k: "#776344" }
+      : { t: PALETTE.newTop, f: PALETTE.newFront, s: PALETTE.newSide, k: PALETTE.newStroke };
+    const c = hl ? (opts.materialColors ? materialColors : { t: PALETTE.newTop, f: PALETTE.newFront, s: PALETTE.newSide, k: PALETTE.newStroke }) : { t: PALETTE.oldTop, f: PALETTE.oldFront, s: PALETTE.oldSide, k: PALETTE.oldStroke };
     const [x0, y0, z0] = b.min, [x1, y1, z1] = b.max;
     body.push(poly([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], c.t, c.k)); // top
     body.push(poly([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], c.f, c.k)); // front

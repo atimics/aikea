@@ -194,3 +194,22 @@ describe("nesting and DXF", () => {
     expect(outlines).toBe(sheets[0].placements.length);
   });
 });
+
+describe("crowded shelf layouts", () => {
+  it("places each adjustable shelf on its own row and blocks a kit with missing shelves", () => {
+    const d = createDesign("cube", { height: 400, adjustableShelves: 20 });
+    const shelves = d.parts.filter((p) => p.id.startsWith('shelf_adj'));
+    const heights = shelves.map((p) => worldBox(p).min[2]);
+    expect(new Set(heights).size).toBe(shelves.length);
+    expect(shelves.length).toBeLessThan(20);
+    expect(d.issues.some((i) => i.code === 'shelves_dropped' && i.level === 'error')).toBe(true);
+  });
+  it("flags fixed shelves that share physical space", () => {
+    const d = createDesign("bookshelf", { fixedShelfHeights: [500, 505] });
+    expect(d.issues.some((i) => i.code === 'panel_overlap' && i.level === 'error')).toBe(true);
+  });
+  it("blocks shelf-pin drilling deeper than the chosen board", () => {
+    const d = createDesign("cube", { material: 'hardboard_3', joinery: 'confirmat', adjustableShelves: 1 });
+    expect(d.issues.some((i) => i.code === 'hole_outside_panel' && i.level === 'error')).toBe(true);
+  });
+});

@@ -72,7 +72,10 @@ function renderForm() {
   $('advanced-fields').innerHTML = Object.entries(fields).filter(([key]) => !used.has(key)).map(([key, schema]) => inputFor(key, schema, params[key])).join('');
   materialNote();
 }
-function materialNote() { $('material-note').textContent = options.materials.find((m) => m.key === params.material)?.notes || ''; }
+function materialNote() {
+  $('material-note').textContent = options.materials.find((m) => m.key === params.material)?.notes || '';
+  document.querySelector('.material-swatch').dataset.finish = String(params.material).startsWith('melamine') ? 'melamine' : String(params.material).startsWith('mdf') ? 'mdf' : 'wood';
+}
 function payload() { return { template, params, name: $('design-name').value.trim() || undefined, ...(designId ? { design_id: designId, expected_revision: baseRevision } : {}) }; }
 function readForm() {
   for (const el of $('design-form').querySelectorAll('[data-param]')) {
@@ -142,7 +145,7 @@ function renderChecks() {
   if (result.nestingError) issues.unshift({ level: 'error', code: 'nesting', message: result.nestingError });
   const fit = issues.filter((i) => i.code === 'part_exceeds_sheet' || i.code === 'nesting');
   const groups = [
-    { title: 'Sheet fit', items: fit, ok: `${result.sheets.length} sheets, with grain direction respected.` },
+    { title: 'Sheet fit', items: fit, ok: result.sheets.length ? `${result.sheets.length} sheets, with grain direction respected.` : 'Panel sizes checked against the selected material.' },
     { title: 'Strength & stability', items: issues.filter((i) => /sag|tip|racking|back|shelves/.test(i.code)), ok: 'Dimensions checked for the selected load.' },
     { title: 'Joinery & machining', items: issues.filter((i) => !fit.includes(i) && !/sag|tip|racking|back|shelves/.test(i.code)), ok: `${result.metrics.holes} face holes · ${result.metrics.edgeBores} edge bores.` },
   ];
@@ -170,7 +173,7 @@ async function saveOrBuild(build) {
   try {
     if (dirty || !designId) await persist();
     if (build) {
-      const kit = await api(`/api/designs/${designId}/build`, {});
+      const kit = await api(`/api/designs/${designId}/build`, { expected_revision: baseRevision });
       $('build-result').innerHTML = `<p>Your kit is ready. ${kit.files.length} files, sized for this design.</p><a class="button primary" href="${escape(kit.download)}" download>Download kit <span aria-hidden="true">↓</span></a><a class="text-link" href="${escape(kit.instructions)}" target="_blank" rel="noopener">Open assembly instructions ↗</a>`;
       $('build-result').hidden = false;
       message('Your fabrication kit is ready.');

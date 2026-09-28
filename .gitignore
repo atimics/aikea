@@ -3,3 +3,6 @@ dist/
 *.log
 .aikea/
 .DS_Store
+.aikea-browser-tests/
+test-results/
+playwright-report/

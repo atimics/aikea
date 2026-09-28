@@ -12,7 +12,7 @@ export const CarcassParams = z.object({
   material: z.string().default("baltic_birch_18").describe("Carcass board (see aikea_list_options)"),
   backMaterial: z.string().nullable().default("hardboard_3").describe("Back panel board, or null for an open back"),
   fixedShelves: z.number().int().min(0).max(12).default(0).describe("Fixed (structural) shelves, evenly spaced"),
-  fixedShelfHeights: z.array(z.number()).optional().describe("Optional explicit heights (mm from floor to top of shelf) for fixed shelves; overrides fixedShelves"),
+  fixedShelfHeights: z.array(z.number().min(0)).max(12).optional().describe("Optional explicit heights (mm from floor to top of shelf) for fixed shelves; overrides fixedShelves"),
   adjustableShelves: z.number().int().min(0).max(20).default(0).describe("Adjustable shelves on 5mm shelf pins"),
   plinthHeight: z.number().min(0).max(200).default(0).describe("Toe-kick/plinth height; 0 = bottom panel on the floor"),
   joinery: z.enum(["cam_dowel", "confirmat"]).default("cam_dowel"),
@@ -147,13 +147,15 @@ export function buildCarcass(input: CarcassParams): TemplateResult {
     const perBay = bays.map(() => 0);
     for (let i = 0; i < p.adjustableShelves; i++) perBay[i % bays.length]++;
     let n = 0;
+    const occupiedRows = new Set<number>();
     bays.forEach(([lo, hi], bi) => {
       const k = perBay[bi];
       for (let j = 1; j <= k; j++) {
         const target = lo + ((hi - lo) * j) / (k + 1);
-        const bayRows = rows.filter((r) => r > lo && r < hi - t - 30);
+        const bayRows = rows.filter((r) => r > lo && r < hi - t - 30 && !occupiedRows.has(r));
         if (!bayRows.length) return;
         const r = bayRows.reduce((a, b) => (Math.abs(b - target) < Math.abs(a - target) ? b : a));
+        occupiedRows.add(r);
         const zRest = r + SHELF_PIN.dia / 2 + 1; // pin top
         adjustable.push(
           mk({ ...common, id: `shelf_adj_${++n}`, name: "Adjustable shelf", min: [t + 1, backClear + 1, round(zRest)], size: [W - 2 * t - 2, shelfDepth - 3, t], xAxis: "+X", yAxis: "+Y" }),
@@ -161,7 +163,7 @@ export function buildCarcass(input: CarcassParams): TemplateResult {
       }
     });
     if (n < p.adjustableShelves) {
-      issues.push({ level: "warn", code: "shelves_dropped", message: `Only ${n} of ${p.adjustableShelves} adjustable shelves fit between the fixed shelves.` });
+      issues.push({ level: "error", code: "shelves_dropped", message: `This layout fits ${n} adjustable shelves. Choose ${n} shelves or increase the height to fit the requested ${p.adjustableShelves}.` });
     }
   }
 

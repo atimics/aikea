@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync, writeFileSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Server } from "node:http";
+import { request, type Server } from "node:http";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { unzipSync, strFromU8 } from "fflate";
@@ -76,6 +76,8 @@ describe('browser workshop over HTTP', () => {
     const stale = await post('/api/designs', { template: 'bookshelf', design_id: id, expected_revision: revision, params: { height: 1700 } });
     expect(stale.status).toBe(422);
     expect((await stale.json()).error).toContain('another client');
+    const oldBuild = await post(`/api/designs/${id}/build`, { expected_revision: revision });
+    expect(oldBuild.status).toBe(409);
   });
   it('returns useful errors for invalid settings and malformed JSON', async () => {
     const invalid = await post('/api/preview', { template: 'desk', params: { width: 20 } });
@@ -99,8 +101,11 @@ describe('browser workshop over HTTP', () => {
     expect(foreign.status).toBe(403);
     const form = await fetch(base + '/api/designs', { method: 'POST', body: 'template=cube' });
     expect(form.status).toBe(415);
-    const host = await fetch(base + '/api/designs', { headers: { host: 'attacker.example' } });
-    expect(host.status).toBe(403);
+    const hostStatus = await new Promise<number | undefined>((resolve, reject) => {
+      const req = request(base + '/api/designs', { headers: { host: 'attacker.example' } }, (res) => { res.resume(); resolve(res.statusCode); });
+      req.on('error', reject); req.end();
+    });
+    expect(hostStatus).toBe(403);
   });
   it('limits downloads to design artifacts within the saved-design directory', async () => {
     writeFileSync(join(designDir(id), 'quotes.json'), JSON.stringify({ email: 'private@example.com' }));
