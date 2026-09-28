@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { McpServer, ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { cutList, hardwareBom, machiningMetrics } from "./bom.js";
-import { createDesign, shelfSag, TEMPLATES } from "./design.js";
+import { createDesign, reviseDesign, shelfSag, TEMPLATES } from "./design.js";
 import { MATERIALS } from "./materials.js";
 import { buildPackage, svgToPng, type BuildResult } from "./package.js";
 import { loadFabricators, saveFabricator, submitRfq } from "./quote.js";
@@ -131,16 +131,16 @@ export function createServer(): McpServer {
       description: "Generate a parametric flat-pack design: every panel, its CNC machining (holes, grooves, edge bores), hardware and assembly steps. Returns a summary, validation issues and a preview image. Pass design_id to revise an existing design in place.",
       inputSchema: {
         template: z.enum(Object.keys(TEMPLATES) as [string, ...string[]]).describe("Template key from aikea_list_options"),
-        params: z.record(z.string(), z.any()).default({}).describe("Template parameters (mm). Omitted values use the template defaults."),
+        params: z.record(z.string(), z.any()).default({}).describe("Template parameters (mm). Omitted values keep saved settings on revisions, or use template defaults for new designs."),
         name: z.string().optional().describe("Human-friendly name, e.g. 'Living room bookcase'"),
         design_id: z.string().optional().describe("Existing design to overwrite (revision)"),
       },
     },
     async ({ template, params, name, design_id }) => {
       try {
-        let prevName: string | undefined;
-        if (design_id) prevName = loadDesign(design_id).name;
-        const d = createDesign(template, params ?? {}, name ?? prevName, design_id);
+        const d = design_id
+          ? reviseDesign(loadDesign(design_id), template, params ?? {}, name)
+          : createDesign(template, params ?? {}, name);
         saveDesign(d);
         const preview = isoSvg(d, d.parts, { dims: true, width: 640, maxHeight: 820, title: d.name });
         return { content: [{ type: "text", text: summary(d) }, await image(preview)] };

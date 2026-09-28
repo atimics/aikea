@@ -141,3 +141,16 @@ export function createDesign(template: string, params: Record<string, unknown>, 
     joinery: merged.joinery,
   };
 }
+
+/** A partial revision keeps settings and the original creation date. */
+export function reviseDesign(previous: Design, template: string, params: Record<string, unknown>, name?: string): Design {
+  const d = createDesign(template, {
+    ...(previous.template === template ? previous.params : {}), ...params,
+  }, name ?? previous.name, previous.id);
+  return { ...d, createdAt: previous.createdAt, updatedAt: new Date().toISOString() };
+}
+
+export function assertBuildable(d: Design): void {
+  const errors = d.issues.filter((i) => i.level === "error");
+  if (errors.length) throw new Error(`Fix design errors first:\n${errors.map((i) => `- ${i.message}`).join("\n")}`);
+}

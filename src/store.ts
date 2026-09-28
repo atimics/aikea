@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, renameSync, rmSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Design } from "./types.js";
@@ -18,7 +19,16 @@ export function saveDesign(d: Design): string {
   const dir = designDir(d.id);
   mkdirSync(dir, { recursive: true });
   const file = join(dir, "design.json");
-  writeFileSync(file, JSON.stringify(d, null, 2));
+  const temporary = `${file}.${randomUUID()}.tmp`;
+  try {
+    writeFileSync(temporary, JSON.stringify(d, null, 2));
+    // A revised model must always get a fresh fabrication package.
+    rmSync(join(dir, "build"), { recursive: true, force: true });
+    rmSync(join(dir, `${d.id}.zip`), { force: true });
+    renameSync(temporary, file);
+  } finally {
+    rmSync(temporary, { force: true });
+  }
   return file;
 }
 
@@ -28,13 +38,13 @@ export function loadDesign(id: string): Design {
   return JSON.parse(readFileSync(file, "utf8"));
 }
 
-export function listDesigns(): { id: string; name: string; template: string; overall: Design["overall"]; createdAt: string }[] {
+export function listDesigns(): { id: string; name: string; template: string; overall: Design["overall"]; createdAt: string; updatedAt?: string }[] {
   const root = join(aikeaHome(), "designs");
   return readdirSync(root)
     .filter((id) => existsSync(join(root, id, "design.json")))
     .map((id) => {
       const d = JSON.parse(readFileSync(join(root, id, "design.json"), "utf8")) as Design;
-      return { id: d.id, name: d.name, template: d.template, overall: d.overall, createdAt: d.createdAt };
+      return { id: d.id, name: d.name, template: d.template, overall: d.overall, createdAt: d.createdAt, updatedAt: d.updatedAt };
     })
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    .sort((a, b) => (b.updatedAt ?? b.createdAt).localeCompare(a.updatedAt ?? a.createdAt));
 }

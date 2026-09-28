@@ -1,7 +1,8 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { strToU8, zipSync } from "fflate";
 import { cutList, hardwareBom, machiningMetrics, toCsv, type MachiningMetrics } from "./bom.js";
+import { assertBuildable } from "./design.js";
 import { faceHasOps, partDxf, sheetDxf } from "./dxf.js";
 import { instructionsHtml } from "./instructions.js";
 import { getMaterial } from "./materials.js";
@@ -85,10 +86,41 @@ function summariseBores(p: Part): string {
   return [...g.entries()].map(([k, n]) => `${n}× ${k}`).join(", ");
 }
 
+const building = new Set<string>();
+
 export async function buildPackage(d: Design, opts: Partial<NestOptions> = {}): Promise<BuildResult> {
+  assertBuildable(d);
+  const root = designDir(d.id);
+  if (building.has(root)) throw new Error("This design is being built. Try again when the build finishes.");
   const nest = { ...DEFAULT_NEST, ...opts };
-  const dir = join(designDir(d.id), "build");
-  rmSync(dir, { recursive: true, force: true });
+  for (const [key, min, max] of [["toolDia", 1, 20], ["spacing", 0, 30], ["trim", 0, 50]] as const) {
+    if (!Number.isFinite(nest[key]) || nest[key] < min || nest[key] > max) throw new Error(`${key} must be between ${min} and ${max} mm.`);
+  }
+  mkdirSync(root, { recursive: true });
+  const modelPath = join(root, "design.json");
+  const snapshot = () => existsSync(modelPath) ? readFileSync(modelPath, "utf8") : null;
+  const before = snapshot();
+  if (before && JSON.stringify(JSON.parse(before)) !== JSON.stringify(d)) throw new Error("The design changed. Load the latest version and build again.");
+  const stage = mkdtempSync(join(root, ".build-"));
+  building.add(root);
+  try {
+    const result = await writePackage(d, nest, stage);
+    if (snapshot() !== before) throw new Error("The design changed during the build. Build the latest version again.");
+    const dir = join(root, "build");
+    const zip = join(root, `${d.id}.zip`);
+    rmSync(dir, { recursive: true, force: true });
+    renameSync(result.dir, dir);
+    renameSync(result.zip, zip);
+    return { ...result, dir, zip, previewPng: result.previewPng ? join(dir, "preview.png") : undefined };
+  } finally {
+    building.delete(root);
+    rmSync(stage, { recursive: true, force: true });
+  }
+}
+
+async function writePackage(d: Design, opts: Partial<NestOptions>, stage: string): Promise<BuildResult> {
+  const nest = { ...DEFAULT_NEST, ...opts };
+  const dir = join(stage, "build");
   for (const sub of ["dxf/parts", "dxf/sheets", "svg"]) mkdirSync(join(dir, sub), { recursive: true });
   const files: Record<string, Uint8Array> = {};
   const put = (rel: string, data: string | Uint8Array) => {
@@ -122,7 +154,7 @@ export async function buildPackage(d: Design, opts: Partial<NestOptions> = {}): 
   if (png) put("preview.png", png);
   put("design.json", JSON.stringify(d, null, 2));
 
-  const zipPath = join(designDir(d.id), `${d.id}.zip`);
+  const zipPath = join(stage, `${d.id}.zip`);
   writeFileSync(zipPath, zipSync(Object.fromEntries(Object.entries(files).map(([k, v]) => [`${d.id}/${k}`, v]))));
 
   return {
@@ -134,4 +166,3 @@ export async function buildPackage(d: Design, opts: Partial<NestOptions> = {}): 
     previewPng: png ? join(dir, "preview.png") : undefined,
   };
 }
-

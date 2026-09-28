@@ -65,9 +65,10 @@ describe("MCP end to end", () => {
   });
 
   it("revises a design in place", async () => {
-    const r: any = await client.callTool({ name: "aikea_design", arguments: { template: "bookshelf", design_id: id, params: { width: 760, height: 1500, depth: 280, adjustableShelves: 3, fixedShelves: 1 } } });
+    const r: any = await client.callTool({ name: "aikea_design", arguments: { template: "bookshelf", design_id: id, params: { width: 760 } } });
     expect(text(r)).toContain(`design_id: ${id}`);
     expect(text(r)).toContain("760 W");
+    expect(text(r)).toContain("280 D × 1500 H");
     const list = await client.callTool({ name: "aikea_list_designs", arguments: {} });
     expect(text(list).match(new RegExp(id, "g"))!.length).toBe(1);
   });
