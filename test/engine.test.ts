@@ -19,6 +19,8 @@ const CASES: [string, Record<string, unknown>][] = [
   ["cabinet", {}],
   ["cube", {}],
   ["cube", { joinery: "confirmat", material: "mdf_18" }],
+  ["tideline", {}],
+  ["tideline", { width: 1600, height: 1100, depth: 280, gap: 48, joinery: "confirmat", accent: "ink" }],
   ["desk", {}],
   ["desk", { joinery: "confirmat", topOverhang: 50, height: 1050 }],
 ];
@@ -57,7 +59,7 @@ describe("geometry", () => {
 
   it("keeps parts from intersecting (except the back panel inside its grooves)", () => {
     for (const d of designs) {
-      const solid = d.parts.filter((p) => p.id !== "back");
+      const solid = d.parts.filter((p) => p.id !== "back" && p.role !== "back");
       for (let i = 0; i < solid.length; i++)
         for (let j = i + 1; j < solid.length; j++) {
           const a = worldBox(solid[i]), b = worldBox(solid[j]);

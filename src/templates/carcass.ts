@@ -118,6 +118,7 @@ export function buildCarcass(input: CarcassParams): TemplateResult {
       size: [W - 2 * t + 2 * (grooveD - clearance), bt, zHi - zLo - 2 * clearance],
       xAxis: "+Z", yAxis: "+X",
     });
+    backPart.role = "back";
     parts.push(backPart);
   } else if (H > 900) {
     issues.push({ level: "warn", code: "no_back_racking", message: "Open-back carcass over 900mm tall has little racking resistance; add a back panel or fixed shelves and anchor it to the wall." });

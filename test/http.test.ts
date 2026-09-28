@@ -35,7 +35,7 @@ describe('browser workshop over HTTP', () => {
   });
   it('exposes the real template schemas and material choices', async () => {
     const options = await (await fetch(base + '/api/options')).json();
-    expect(options.templates).toHaveLength(4);
+    expect(options.templates).toHaveLength(5);
     expect(options.templates[0].schema.properties.width.minimum).toBe(250);
     expect(options.materials.length).toBeGreaterThan(4);
   });

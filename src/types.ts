@@ -52,6 +52,8 @@ export interface Part {
   name: string; // human name, e.g. "Side panel"
   label?: string; // IKEA-style letter shared by identical parts, assigned later
   material: string; // material key
+  role?: "back"; // a back panel enters the grooves in its frame
+  finish?: { name: string; color: string }; // paint applied after machining
   length: number;
   width: number;
   thickness: number;

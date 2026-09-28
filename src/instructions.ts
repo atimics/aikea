@@ -83,7 +83,7 @@ h1{font-size:34px;letter-spacing:.02em;margin:0 0 4px}h2{font-size:20px;border-b
 @media print{h2{page-break-before:always}.step{page-break-inside:avoid}}
 </style></head><body><main>
 <div class="cover"><h1>${esc(d.name.toUpperCase())}</h1><div class="sub">${d.overall.width} × ${d.overall.depth} × ${d.overall.height} mm · ${esc(materials)}</div>
-${isoSvg(d, d.parts, { dims: true, width: 620, maxHeight: 640 })}</div>
+${isoSvg(d, d.parts, { dims: true, width: 620, maxHeight: 640, materialColors: true, camera: d.template === "tideline" ? "front" : "isometric" })}</div>
 ${tipOver ? `<div class="warn-box">${ICONS.wall}<div><b>Tip-over hazard.</b> This furniture must be anchored to the wall with the included anti-tip kit. Use fasteners suited to your wall material.</div></div>` : ""}
 <div class="warn-box" style="border-color:#111">${ICONS.person}<div>Assemble on a soft, clean surface. Some steps need two people.</div></div>
 <h2>Tools</h2><div class="tools">${tools.map(([k, t]) => `<div>${ICONS[k]}<br>${t}</div>`).join("")}</div>

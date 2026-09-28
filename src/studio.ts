@@ -9,7 +9,7 @@ import { loadDesign } from "./store.js";
 import type { Design } from "./types.js";
 
 export const DesignInput = z.object({
-  template: z.enum(["bookshelf", "cabinet", "cube", "desk"]),
+  template: z.enum(["bookshelf", "cabinet", "cube", "desk", "tideline"]),
   params: z.record(z.string(), z.unknown()).default({}),
   name: z.string().trim().min(1).max(100).optional(),
   design_id: z.string().regex(/^[a-z0-9-]+$/).max(100).optional(),
@@ -63,7 +63,7 @@ export function studioDesign(d: Design) {
     metrics: machiningMetrics(d),
     cutlist: rows.map((r) => ({ ...r, svg: partSvg(d.parts.find((p) => p.label === r.label)!) })),
     hardware: hardwareBom(d), sheets,
-    preview: isoSvg(d, d.parts, { ...opts, dims: true }),
+    preview: isoSvg(d, d.parts, { ...opts, dims: true, camera: d.template === "tideline" ? "front" : "isometric" }),
     exploded: isoSvg(d, d.parts, { ...opts, explode: 160, highlight: new Set(d.parts.map((p) => p.id)) }),
     steps: d.steps.map((s, i) => {
       const added = new Set(d.steps.slice(0, i + 1).flatMap((step) => step.parts));

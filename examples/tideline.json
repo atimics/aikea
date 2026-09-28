@@ -1,0 +1,10 @@
+{
+  "width": 1664,
+  "height": 1480,
+  "depth": 360,
+  "material": "baltic_birch_18",
+  "gap": 32,
+  "accent": "clay",
+  "joinery": "cam_dowel",
+  "load": "books"
+}

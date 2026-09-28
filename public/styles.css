@@ -1356,3 +1356,6 @@ dialog blockquote {
   background: #c5b392;
   border-color: #a69373;
 }
+
+/* A named art piece sits beside the everyday furniture templates. */
+.template-button[data-template="tideline"] { grid-column: 1 / -1; flex-direction: row; gap: 12px; color: #9c4937; }

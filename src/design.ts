@@ -5,6 +5,7 @@ import { getMaterial } from "./materials.js";
 import { buildCarcass, CarcassParams } from "./templates/carcass.js";
 import type { SagCheck, TemplateResult } from "./templates/common.js";
 import { buildDesk, DeskParams } from "./templates/desk.js";
+import { buildTideline, TidelineParams } from "./templates/tideline.js";
 import type { Design, Issue, Part } from "./types.js";
 
 export interface TemplateDef {
@@ -43,6 +44,13 @@ export const TEMPLATES: Record<string, TemplateDef> = {
     schema: DeskParams,
     defaults: { width: 1400, depth: 700, height: 740 },
     build: buildDesk,
+  },
+  tideline: {
+    key: "tideline",
+    description: "Sculptural bookcase: five stepped towers, shadow gaps and two painted backs. Fixed shelves and five wall anchors.",
+    schema: TidelineParams,
+    defaults: {},
+    build: buildTideline,
   },
 };
 
@@ -88,7 +96,7 @@ function validate(parts: Part[], sag: SagCheck[]): Issue[] {
     }
   }
   // The back intentionally enters its grooves. Every other panel needs clear space.
-  const solid = parts.filter((p) => p.id !== "back").map((p) => ({ p, box: worldBox(p) }));
+  const solid = parts.filter((p) => p.id !== "back" && p.role !== "back").map((p) => ({ p, box: worldBox(p) }));
   for (let i = 0; i < solid.length; i++) for (let j = i + 1; j < solid.length; j++) {
     const a = solid[i], b = solid[j];
     if ([0, 1, 2].every((k) => Math.min(a.box.max[k], b.box.max[k]) - Math.max(a.box.min[k], b.box.min[k]) > 0.01)) {
@@ -112,7 +120,7 @@ function validate(parts: Part[], sag: SagCheck[]): Issue[] {
 /** Identical physical parts (same board, size and machining) share a letter. */
 export function partSignature(p: Part): string {
   const sortJ = (xs: unknown[]) => xs.map((x) => JSON.stringify(x)).sort();
-  return JSON.stringify([p.material, p.length, p.width, p.thickness, sortJ(p.holes), sortJ(p.edgeBores), sortJ(p.grooves), p.edgeBand]);
+  return JSON.stringify([p.material, p.length, p.width, p.thickness, sortJ(p.holes), sortJ(p.edgeBores), sortJ(p.grooves), p.edgeBand, p.finish]);
 }
 
 function assignLabels(parts: Part[]) {

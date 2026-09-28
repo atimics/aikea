@@ -68,12 +68,31 @@ test('restores a draft and gates invalid fabrication settings', async ({ page })
   await expect(page.getByRole('tab', { name: 'Exploded', exact: true })).toHaveAttribute('aria-selected', 'true');
 });
 
-test('switches between all four templates with working defaults', async ({ page }) => {
+test('switches between all templates with working defaults', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Build my kit', exact: true })).toBeEnabled();
-  for (const name of ['Cabinet', 'Storage cube', 'Desk', 'Bookcase']) {
+  for (const name of ['Cabinet', 'Storage cube', 'Desk', 'Tideline', 'Bookcase']) {
     await page.getByRole('button', { name: new RegExp(`^${name}`) }).click();
     await expect(page.getByRole('button', { name: 'Build my kit', exact: true })).toBeEnabled();
     await expect(page.getByRole('img', { name: new RegExp(`^${name}: assembled`) })).toBeVisible();
   }
+});
+
+test('makes a Tideline art piece with a chosen finish', async ({ page }, testInfo) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: 'Build my kit', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: 'Tideline', exact: true }).click();
+  await expect(page.getByRole('img', { name: /^Tideline: assembled/ })).toBeVisible();
+  await expect(page.getByRole('spinbutton', { name: 'Width', exact: true })).toHaveValue('1664');
+  await page.getByRole('combobox', { name: 'Accent finish', exact: true }).selectOption('ink');
+  const name = `Tideline ${testInfo.project.name} ${Date.now()}`;
+  await page.getByRole('textbox', { name: 'Design name', exact: true }).fill(name);
+  await page.getByRole('button', { name: 'Build my kit', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'Download kit', exact: false })).toBeVisible();
+  await page.getByRole('button', { name: 'My designs', exact: true }).click();
+  await page.getByRole('button', { name: `Open ${name}`, exact: true }).click();
+  await expect(page.getByRole('combobox', { name: 'Accent finish', exact: true })).toHaveValue('ink');
+  await expect(page.getByRole('img', { name: /^Tideline: assembled/ }).locator('polygon[fill="#294B50"]').first()).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('tideline.png'), fullPage: true });
 });

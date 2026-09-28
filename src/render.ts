@@ -48,9 +48,14 @@ export interface IsoOptions {
   explode?: number; // millimetres of space between panels, for inspection
   background?: string;
   materialColors?: boolean;
+  camera?: "isometric" | "front";
 }
 
 export function isoSvg(design: Design, parts: Part[], opts: IsoOptions = {}): string {
+  // A shallow front view reveals the backs of narrow, deep shelves.
+  const project = opts.camera === "front"
+    ? (p: Vec3): [number, number] => [p[0] * Math.cos(Math.PI / 12) - p[1] * Math.sin(Math.PI / 12), (p[0] * Math.sin(Math.PI / 12) + p[1] * Math.cos(Math.PI / 12)) * Math.sin(Math.PI / 18) - p[2] * Math.cos(Math.PI / 18)]
+    : proj;
   const box = (p: Part) => {
     const b = worldBox(p);
     if (opts.explode) {
@@ -67,7 +72,7 @@ export function isoSvg(design: Design, parts: Part[], opts: IsoOptions = {}): st
   const all = (parts.length ? parts : design.parts).map(box);
   const pts: [number, number][] = [];
   for (const b of all)
-    for (const x of [b.min[0], b.max[0]]) for (const y of [b.min[1], b.max[1]]) for (const z of [b.min[2], b.max[2]]) pts.push(proj([x, y, z]));
+    for (const x of [b.min[0], b.max[0]]) for (const y of [b.min[1], b.max[1]]) for (const z of [b.min[2], b.max[2]]) pts.push(project([x, y, z]));
   const minX = Math.min(...pts.map((p) => p[0])), maxX = Math.max(...pts.map((p) => p[0]));
   const minY = Math.min(...pts.map((p) => p[1])), maxY = Math.max(...pts.map((p) => p[1]));
   const pad = 70;
@@ -79,7 +84,7 @@ export function isoSvg(design: Design, parts: Part[], opts: IsoOptions = {}): st
   const H = Math.ceil((maxY - minY) * s + 2 * pad + top0);
   const top = opts.title ? 30 : 0;
   const P = (p: Vec3) => {
-    const [x, y] = proj(p);
+    const [x, y] = project(p);
     return [round((x - minX) * s + pad, 1), round((y - minY) * s + pad + top, 1)] as [number, number];
   };
   const poly = (ps: Vec3[], fill: string, stroke: string) =>
@@ -93,7 +98,8 @@ export function isoSvg(design: Design, parts: Part[], opts: IsoOptions = {}): st
       : b.part.material.startsWith("mdf") ? { t: "#d6c6a7", f: "#c5b392", s: "#af9b78", k: "#6f5e40" }
       : b.part.material.startsWith("baltic") ? { t: "#f2e5c9", f: "#e6d3ae", s: "#ccb78c", k: "#776344" }
       : { t: PALETTE.newTop, f: PALETTE.newFront, s: PALETTE.newSide, k: PALETTE.newStroke };
-    const c = hl ? (opts.materialColors ? materialColors : { t: PALETTE.newTop, f: PALETTE.newFront, s: PALETTE.newSide, k: PALETTE.newStroke }) : { t: PALETTE.oldTop, f: PALETTE.oldFront, s: PALETTE.oldSide, k: PALETTE.oldStroke };
+    const finish = finishColor(b.part);
+    const c = hl ? (finish ? { t: finish, f: finish, s: finish, k: "#593D32" } : opts.materialColors ? materialColors : { t: PALETTE.newTop, f: PALETTE.newFront, s: PALETTE.newSide, k: PALETTE.newStroke }) : { t: PALETTE.oldTop, f: PALETTE.oldFront, s: PALETTE.oldSide, k: PALETTE.oldStroke };
     const [x0, y0, z0] = b.min, [x1, y1, z1] = b.max;
     body.push(poly([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], c.t, c.k)); // top
     body.push(poly([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], c.f, c.k)); // front
@@ -137,13 +143,18 @@ export function esc(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+function finishColor(p: Part): string | undefined {
+  const color = p.finish?.color;
+  return color && /^#[0-9a-f]{6}$/i.test(color) ? color : undefined;
+}
+
 /** Flat drawing of a part's face A with machining, used in the parts inventory. */
 export function partSvg(p: Part, maxW = 220, maxH = 120): string {
   const s = Math.min(maxW / p.length, maxH / p.width);
   const w = p.length * s, h = p.width * s;
   const Y = (y: number) => round(h - y * s + 4, 1); // y up
   const X = (x: number) => round(x * s + 4, 1);
-  const els: string[] = [`<rect x="4" y="4" width="${round(w, 1)}" height="${round(h, 1)}" fill="#f3d9b1" stroke="#5b3a12"/>`];
+  const els: string[] = [`<rect x="4" y="4" width="${round(w, 1)}" height="${round(h, 1)}" fill="${finishColor(p) ?? "#f3d9b1"}" stroke="#5b3a12"/>`];
   for (const g of p.grooves.filter((g) => g.face === "A")) {
     const horiz = Math.abs(g.y1 - g.y0) < 0.01;
     const x0 = horiz ? Math.min(g.x0, g.x1) : g.x0 - g.width / 2, x1 = horiz ? Math.max(g.x0, g.x1) : g.x0 + g.width / 2;
