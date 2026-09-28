@@ -1,0 +1,12 @@
+{
+  "width": 800,
+  "height": 1800,
+  "depth": 300,
+  "material": "plywood_18",
+  "backMaterial": "hardboard_3",
+  "fixedShelves": 1,
+  "adjustableShelves": 4,
+  "plinthHeight": 70,
+  "joinery": "cam_dowel",
+  "load": "books"
+}

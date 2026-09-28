@@ -1,0 +1,5 @@
+node_modules/
+dist/
+*.log
+.aikea/
+.DS_Store
