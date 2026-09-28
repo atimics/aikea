@@ -45,11 +45,26 @@ export interface IsoOptions {
   width?: number; // px (maximum)
   maxHeight?: number; // px
   title?: string;
+  explode?: number; // millimetres of space between panels, for inspection
+  background?: string;
+  materialColors?: boolean;
 }
 
 export function isoSvg(design: Design, parts: Part[], opts: IsoOptions = {}): string {
-  const boxes: Box[] = parts.filter((p) => !opts.hide?.has(p.id)).map((p) => ({ part: p, ...worldBox(p) }));
-  const all = (parts.length ? parts : design.parts).map((p) => worldBox(p));
+  const box = (p: Part) => {
+    const b = worldBox(p);
+    if (opts.explode) {
+      const centre = [design.overall.width / 2, design.overall.depth / 2, design.overall.height / 2];
+      for (const k of [0, 1, 2] as const) {
+        const shift = (((b.min[k] + b.max[k]) / 2 - centre[k]) / Math.max(centre[k], 1)) * opts.explode;
+        b.min[k] += shift;
+        b.max[k] += shift;
+      }
+    }
+    return b;
+  };
+  const boxes: Box[] = parts.filter((p) => !opts.hide?.has(p.id)).map((p) => ({ part: p, ...box(p) }));
+  const all = (parts.length ? parts : design.parts).map(box);
   const pts: [number, number][] = [];
   for (const b of all)
     for (const x of [b.min[0], b.max[0]]) for (const y of [b.min[1], b.max[1]]) for (const z of [b.min[2], b.max[2]]) pts.push(proj([x, y, z]));
@@ -74,7 +89,11 @@ export function isoSvg(design: Design, parts: Part[], opts: IsoOptions = {}): st
   const labelSpots: { x: number; y: number; label: string }[] = [];
   for (const b of drawOrder(boxes)) {
     const hl = !opts.highlight || opts.highlight.has(b.part.id);
-    const c = hl ? { t: PALETTE.newTop, f: PALETTE.newFront, s: PALETTE.newSide, k: PALETTE.newStroke } : { t: PALETTE.oldTop, f: PALETTE.oldFront, s: PALETTE.oldSide, k: PALETTE.oldStroke };
+    const materialColors = b.part.material.startsWith("melamine") ? { t: "#fafaf4", f: "#e7e7dc", s: "#cecec1", k: "#6c7266" }
+      : b.part.material.startsWith("mdf") ? { t: "#d6c6a7", f: "#c5b392", s: "#af9b78", k: "#6f5e40" }
+      : b.part.material.startsWith("baltic") ? { t: "#f2e5c9", f: "#e6d3ae", s: "#ccb78c", k: "#776344" }
+      : { t: PALETTE.newTop, f: PALETTE.newFront, s: PALETTE.newSide, k: PALETTE.newStroke };
+    const c = hl ? (opts.materialColors ? materialColors : { t: PALETTE.newTop, f: PALETTE.newFront, s: PALETTE.newSide, k: PALETTE.newStroke }) : { t: PALETTE.oldTop, f: PALETTE.oldFront, s: PALETTE.oldSide, k: PALETTE.oldStroke };
     const [x0, y0, z0] = b.min, [x1, y1, z1] = b.max;
     body.push(poly([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], c.t, c.k)); // top
     body.push(poly([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]], c.f, c.k)); // front
@@ -111,7 +130,7 @@ export function isoSvg(design: Design, parts: Part[], opts: IsoOptions = {}): st
     t([xb + Wd, 0, zb], [xb + Wd, D, zb], `${D}`, 18, 14);
   }
   const titleEl = opts.title ? `<text x="${W / 2}" y="22" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="16" font-weight="700" fill="#111">${esc(opts.title)}</text>` : "";
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2a6fdb"/></marker></defs><rect width="100%" height="100%" fill="#fff"/>${titleEl}${body.join("")}${labels.join("")}${dims.join("")}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs><marker id="arr" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2a6fdb"/></marker></defs><rect width="100%" height="100%" fill="${esc(opts.background ?? "#fff")}"/>${titleEl}${body.join("")}${labels.join("")}${dims.join("")}</svg>`;
 }
 
 export function esc(s: string): string {

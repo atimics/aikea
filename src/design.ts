@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
-import { round } from "./geometry.js";
+import { round, worldBox } from "./geometry.js";
 import { getMaterial } from "./materials.js";
 import { buildCarcass, CarcassParams } from "./templates/carcass.js";
 import type { SagCheck, TemplateResult } from "./templates/common.js";
@@ -60,6 +60,9 @@ function validate(parts: Part[], sag: SagCheck[]): Issue[] {
   const issues: Issue[] = [];
   const trim = 10;
   for (const p of parts) {
+    if (![p.length, p.width, p.thickness].every((v) => Number.isFinite(v) && v > 0)) {
+      issues.push({ level: "error", code: "part_size", message: `${p.name}: each panel dimension must be greater than zero.` });
+    }
     const m = getMaterial(p.material);
     const L = m.sheet.length - 2 * trim, Wd = m.sheet.width - 2 * trim;
     const fits = p.grain ? p.length <= L && p.width <= Wd : (p.length <= L && p.width <= Wd) || (p.length <= Wd && p.width <= L);
@@ -78,8 +81,18 @@ function validate(parts: Part[], sag: SagCheck[]): Issue[] {
         }
       for (const h of hs) {
         const edgeDist = Math.min(h.x, h.y, p.length - h.x, p.width - h.y) - h.dia / 2;
-        if (edgeDist < 3) issues.push({ level: "warn", code: "hole_near_edge", message: `${p.name}: ${h.purpose} hole is ${round(edgeDist, 1)}mm from an edge.` });
+        if (edgeDist < 0 || h.depth <= 0 || h.depth > p.thickness || h.dia <= 0) {
+          issues.push({ level: "error", code: "hole_outside_panel", message: `${p.name}: keep the ${h.purpose} hole inside the panel and within its thickness. Choose a thicker board or adjust the dimensions.` });
+        } else if (edgeDist < 3) issues.push({ level: "warn", code: "hole_near_edge", message: `${p.name}: ${h.purpose} hole is ${round(edgeDist, 1)}mm from an edge.` });
       }
+    }
+  }
+  // The back intentionally enters its grooves. Every other panel needs clear space.
+  const solid = parts.filter((p) => p.id !== "back").map((p) => ({ p, box: worldBox(p) }));
+  for (let i = 0; i < solid.length; i++) for (let j = i + 1; j < solid.length; j++) {
+    const a = solid[i], b = solid[j];
+    if ([0, 1, 2].every((k) => Math.min(a.box.max[k], b.box.max[k]) - Math.max(a.box.min[k], b.box.min[k]) > 0.01)) {
+      issues.push({ level: "error", code: "panel_overlap", message: `${a.p.name} (${a.p.id}) and ${b.p.name} (${b.p.id}) overlap. Increase their spacing or reduce the shelf count.` });
     }
   }
   for (const c of sag) {
@@ -140,4 +153,18 @@ export function createDesign(template: string, params: Record<string, unknown>, 
     issues,
     joinery: merged.joinery,
   };
+}
+
+/** A partial revision keeps settings and the original creation date. */
+export function reviseDesign(previous: Design, template: string, params: Record<string, unknown>, name?: string): Design {
+  const d = createDesign(template, {
+    ...(previous.template === template ? previous.params : {}), ...params,
+  }, name ?? previous.name, previous.id);
+  return { ...d, createdAt: previous.createdAt, updatedAt: new Date().toISOString() };
+}
+
+export function assertBuildable(d: Design): void {
+  const errors = [...d.issues, ...validate(d.parts, [])].filter((i) => i.level === "error");
+  const messages = [...new Set(errors.map((i) => i.message))];
+  if (messages.length) throw new Error(`Fix design errors first:\n${messages.map((message) => `- ${message}`).join("\n")}`);
 }

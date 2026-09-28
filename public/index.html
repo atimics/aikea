@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f5f0">
+  <meta name="description" content="Design furniture that fits your space. Preview every panel, check the fit, and create a kit for your CNC shop.">
+  <title>AIKEA — Your furniture workshop</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='8' fill='%23283e32'/%3E%3Cpath d='M9 31V9h22v22M9 17h22M9 24h22' fill='none' stroke='%23e3ecb7' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#designer">Skip to designer</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="AIKEA workshop home"><span class="brand-mark" aria-hidden="true">▥</span> AIKEA</a>
+    <span class="brand-caption">IDEAS INTO OBJECTS.</span>
+    <nav aria-label="Workshop"><button class="nav-active" id="workshop-nav">Workshop</button><button id="projects-button">My designs <span aria-hidden="true">↗</span></button></nav>
+    <span class="local-indicator"><i></i> Local workshop</span>
+  </header>
+  <main id="designer">
+    <section class="intro">
+      <div><p class="eyebrow">A LITTLE IMAGINATION. A PERFECT FIT.</p><h1>Made for <em>your</em> space.</h1><p class="intro-copy">Your dimensions. Your materials. Your next favourite piece.</p></div>
+      <div class="process" aria-label="Design process"><span class="current"><b>01</b> Design</span><i></i><span><b>02</b> Check the details</span><i></i><span><b>03</b> Make it real</span></div>
+    </section>
+    <div class="notice" id="global-error" role="alert" hidden></div>
+    <div class="workbench">
+      <aside class="config panel" aria-label="Design settings">
+        <div class="section-heading"><h2>Make it yours</h2><span class="small-tag">01 / DESIGN</span></div>
+        <form id="design-form">
+          <fieldset class="template-fieldset"><legend>Start with a shape</legend><div class="template-grid" id="templates"></div></fieldset>
+          <div class="form-section"><div class="label-row"><h3>Set your dimensions</h3><span>mm</span></div><div class="dimension-fields" id="dimensions"></div><p class="field-note">Measured from the outside edges.</p></div>
+          <div class="form-section"><h3>Choose your material</h3><div id="material-field"></div><p id="material-note" class="field-note"></p><div class="material-swatch" aria-hidden="true"><span></span><span></span><span></span><span></span></div></div>
+          <div class="form-section"><h3>The finishing touches</h3><div id="primary-fields" class="field-stack"></div></div>
+          <details class="advanced"><summary>More options <span aria-hidden="true">+</span></summary><div id="advanced-fields" class="field-stack"></div></details>
+        </form>
+        <div class="config-footer"><span aria-hidden="true">↔</span> Every panel follows your measurements.</div>
+      </aside>
+      <section class="canvas-panel panel" aria-label="Furniture preview">
+        <div class="canvas-header"><div><label for="design-name" class="eyebrow">YOUR NEXT PIECE</label><input id="design-name" maxlength="100" aria-label="Design name" value="Everyday bookcase" required><p id="save-state">Draft · saved in this browser</p></div><button id="save-button" class="button secondary" disabled>Save design <span aria-hidden="true">↗</span></button></div>
+        <div class="view-tabs" role="tablist" aria-label="Preview view"><button id="tab-assembled" role="tab" aria-controls="view-panel" aria-selected="true" data-view="assembled">Assembled</button><button id="tab-exploded" role="tab" aria-controls="view-panel" aria-selected="false" tabindex="-1" data-view="exploded">Exploded</button><button id="tab-assembly" role="tab" aria-controls="view-panel" aria-selected="false" tabindex="-1" data-view="assembly">Assembly</button><button id="tab-sheets" role="tab" aria-controls="view-panel" aria-selected="false" tabindex="-1" data-view="sheets">Cut layout</button></div>
+        <div id="view-panel" role="tabpanel" aria-labelledby="tab-assembled" tabindex="0"><div class="canvas" id="canvas"><span class="canvas-corner">DESIGNED BY YOU<br>BUILT TO FIT.</span><div id="drawing" role="img" aria-label="Furniture preview"><p class="loading">Preparing your workshop…</p></div><span id="view-caption" class="canvas-caption">ISOMETRIC VIEW / MILLIMETRES</span><div class="canvas-scale" aria-hidden="true">└────────┘<br>PARAMETRIC / 1:1 FILES</div></div><div id="view-details" hidden></div></div>
+        <div class="metrics" id="metrics" aria-live="polite"><div><strong>—</strong><span>panels</span></div><div><strong>—</strong><span>sheets</span></div><div><strong>—</strong><span>panel weight</span></div><div><strong>—</strong><span>assembly steps</span></div></div>
+        <div class="canvas-footer"><span><i class="status-dot"></i><span id="preview-status" role="status">Preparing preview</span></span><span>Precision starts with a good plan.</span></div>
+      </section>
+      <aside class="details-column" aria-label="Design checks and fabrication">
+        <section class="checks panel"><div class="section-heading"><h2>The details matter</h2><span class="small-tag">02 / CHECK</span></div><p class="section-copy">A closer look before the first cut.</p><div id="checks"><p class="field-note">Checking your design…</p></div><p class="engineering-note">Check estimates with your fabricator. Measure the actual board thickness before cutting.</p></section>
+        <section class="build-card"><span class="eyebrow">03 / MAKE IT REAL</span><div class="kit-icon" aria-hidden="true">↗</div><h2>From screen <br>to sawdust.</h2><p>Everything your CNC shop needs, together in one kit.</p><ul class="kit-contents"><li>Cut files for every panel <span>DXF</span></li><li>Parts & hardware lists <span>CSV</span></li><li>Step-by-step assembly <span>HTML</span></li><li>Sheet layouts & shop notes <span>+</span></li></ul><button id="build-button" class="button primary" disabled>Build my kit <span aria-hidden="true">↗</span></button><p class="build-note" id="build-note">Your design becomes a downloadable ZIP.</p><div id="build-result" hidden></div></section>
+        <button id="parts-button" class="parts-link">Explore parts & hardware <span aria-hidden="true">↗</span></button>
+      </aside>
+    </div>
+    <footer class="page-footer"><span>AIKEA <b> / </b> A workshop for possibilities.</span><span>Designed in millimetres. Made for everyday life.</span><button id="connect-button">Connect your AI assistant ↗</button></footer>
+  </main>
+  <dialog id="projects-dialog"><div class="dialog-heading"><div><p class="eyebrow">YOUR WORKSHOP</p><h2>My designs</h2></div><button data-close class="close-button" aria-label="Close saved designs">×</button></div><p>Pick up where you left off. Designs are shared with your AI assistant.</p><button id="new-button" class="button secondary">+ Start a new design</button><div id="project-list"></div></dialog>
+  <dialog id="parts-dialog"><div class="dialog-heading"><div><p class="eyebrow">EVERY PIECE HAS A PLACE</p><h2>Parts & hardware</h2></div><button data-close class="close-button" aria-label="Close parts and hardware">×</button></div><div id="parts-content"></div></dialog>
+  <dialog id="connect-dialog"><div class="dialog-heading"><div><p class="eyebrow">BETTER TOGETHER</p><h2>Meet your design partner.</h2></div><button data-close class="close-button" aria-label="Close connection help">×</button></div><p>Add this MCP endpoint to an assistant that supports Streamable HTTP. Browser and assistant use the same saved designs.</p><code id="mcp-url"></code><button id="copy-endpoint" class="button secondary">Copy endpoint</button><h3>Try a starting point</h3><blockquote>“Design a bookcase for my 75 cm alcove, 1.6 m tall, with adjustable shelves for paperbacks.”</blockquote><p class="field-note">Use a local MCP client for this local address. For remote access, set AIKEA_PUBLIC_URL and place the service behind an auth proxy.</p></dialog>
+  <div id="toast" role="status" hidden></div>
+  <noscript><p class="notice">Enable JavaScript to open the visual workshop. The MCP server and CLI are also available.</p></noscript>
+</body>
+</html>

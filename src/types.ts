@@ -102,6 +102,7 @@ export interface Design {
   template: string;
   params: Record<string, unknown>;
   createdAt: string;
+  updatedAt?: string;
   overall: { width: number; depth: number; height: number };
   parts: Part[];
   steps: AssemblyStep[];

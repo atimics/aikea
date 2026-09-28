@@ -1,8 +1,31 @@
 # AIKEA
 
-**Design flat-pack furniture with Claude, get back a kit a CNC shop can cut.**
+**Design furniture that fits your space. Take it from a live preview to a kit your CNC shop can cut.**
 
-AIKEA is a [Model Context Protocol](https://modelcontextprotocol.io) server. You describe a bookcase, cabinet, storage cube or desk, and Claude designs it through AIKEA. The server works out every panel and its machining, and produces a fabrication package:
+![The AIKEA workshop](docs/workshop/desktop.png)
+
+## Open your workshop
+
+Use Node.js 22.12+ or 24 for development.
+
+```bash
+git clone https://github.com/atimics/aikea
+cd aikea
+npm ci
+npm run studio
+```
+
+Open **[localhost:3000](http://localhost:3000)**. Pick a bookcase, cabinet, storage cube or desk. Set the dimensions, material and joinery, then explore the assembled piece, exploded panels, assembly steps and sheet layouts.
+
+Save a design to revisit it in **My designs**. **Build my kit** creates a ZIP with cut files, hardware, assembly instructions and shop notes. The parts inspector shows each panel and its machining, plus hardware quantities with spares. Draft edits recover when you refresh the browser.
+
+The browser, MCP server and CLI share the same designs in `$AIKEA_HOME` (default `~/.aikea`). A partial revision keeps your other settings. A saved revision clears the old kit so the next download follows the current design. The browser checks for revisions made by another client before saving or building.
+
+For live development, use `npm run dev:studio`. Refresh the browser after edits.
+
+## Connect your assistant
+
+AIKEA also provides a [Model Context Protocol](https://modelcontextprotocol.io) server. You describe a bookcase, cabinet, storage cube or desk, and Claude designs it through AIKEA. The server works out every panel and its machining, and produces a fabrication package:
 
 - **CNC-ready DXFs:** nested sheet layouts plus one file per part, with a layer for each operation (profile, drill Ø×depth, groove)
 - **Cut list and hardware list** that includes spares (cam locks, dowels, confirmat screws, shelf pins, anti-tip kit)
@@ -51,12 +74,14 @@ Claude Code: `claude mcp add aikea -- node /absolute/path/to/aikea/dist/index.js
 ### Remote connector (Streamable HTTP)
 
 ```bash
-AIKEA_PUBLIC_URL=https://aikea.example.com PORT=3000 node dist/index.js --http
+HOST=0.0.0.0 AIKEA_PUBLIC_URL=https://aikea.example.com PORT=3000 npm run studio
 # MCP endpoint:   https://aikea.example.com/mcp
 # Downloads:      https://aikea.example.com/files/<design_id>/<design_id>.zip
 ```
 
-When `AIKEA_PUBLIC_URL` is set, build results include download links, which is what you need when the client runs somewhere else (for example, claude.ai custom connectors). HTTP mode is stateless and has **no auth**, so put it behind your own auth proxy before exposing it. A `Dockerfile` is included.
+Local mode binds to `127.0.0.1`. For remote access, set `HOST=0.0.0.0`, set `AIKEA_PUBLIC_URL` to your public origin, and put the service behind an auth proxy. Build results then include public download links. HTTP checks the host, browser origin, JSON content type and a 64 KB request limit. Downloads expose design artifacts; quote records stay in the local data folder. A `Dockerfile` is included.
+
+The server serves the workshop at `/`, MCP at `/mcp`, and a health response at `/health`. The Docker image listens on all container interfaces; configure your public origin and auth proxy when publishing it.
 
 ## Tools
 
@@ -144,6 +169,19 @@ node dist/cli.js list
 - Rectangular panels only: no doors, drawers, curves or vertical dividers yet. For wide units, build two carcasses side by side.
 - Sag and stability checks are engineering estimates, not certifications. Always anchor tall furniture to the wall.
 - Material moduli and sheet sizes are nominal. Measure your actual board thickness, because grooves are sized from the nominal value.
+
+## Verify a change
+
+```bash
+npm run typecheck
+npm test
+npx playwright install chromium
+npm run test:browser
+```
+
+The tests cover geometry, joinery, MCP, HTTP, partial revisions, stale builds, downloads and request boundaries. Browser tests run the full save, build, download and reopen flow at desktop, tablet and phone sizes. They also check draft recovery, invalid settings, template switching and keyboard tabs. Screenshots and failure traces are written to `test-results/`. GitHub Actions runs the suite and uploads browser evidence.
+
+See [the workshop review](docs/workshop/REVIEW.md) for the before response, captures and checked flows.
 
 ## License
 
